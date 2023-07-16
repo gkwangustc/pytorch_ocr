@@ -4,7 +4,7 @@ Global:
   epoch_num: 500
   log_smooth_window: 20
   print_batch_step: 10
-  save_model_dir: ./output/rec_ppocr_v3
+  save_model_dir: ./output/rec_pyocr
   save_epoch_step: 3
   eval_batch_step: [0, 2000]
   cal_metric_during_train: true
@@ -13,12 +13,12 @@ Global:
   save_inference_dir:
   use_visualdl: false
   infer_img: doc/imgs_words/ch/word_1.jpg
-  character_dict_path: core/utils/dict/ppocr_keys_v1.txt
+  character_dict_path: core/utils/dict/pyocr_keys_v1.txt
   max_text_length: &max_text_length 25
   infer_mode: false
   use_space_char: true
   distributed: true
-  save_res_path: ./output/rec/predicts_ppocrv3.txt
+  save_res_path: ./output/rec/predicts_pyocr.txt
 
 
 Optimizer:
@@ -75,10 +75,10 @@ Metric:
 Train:
   dataset:
     name: SimpleDataSet
-    data_dir: /root/workspace/dataset/ocr/rec/icdar2019_lsvt/train_images
+    data_dir: /workspace/src/dataset/ocr/rec/icdar2019_lsvt/train_images
     ext_op_transform_idx: 1
     label_file_list:
-    - /root/workspace/dataset/ocr/rec/icdar2019_lsvt/train.txt
+    - /workspace/src/dataset/ocr/rec/icdar2019_lsvt/train.txt
     transforms:
     - DecodeImage:
         img_mode: BGR
@@ -106,9 +106,9 @@ Train:
 Eval:
   dataset:
     name: SimpleDataSet
-    data_dir: /root/workspace/dataset/ocr/rec/icdar2019_lsvt/train_images
+    data_dir: /workspace/src/dataset/ocr/rec/icdar2019_lsvt/train_images
     label_file_list:
-    - /root/workspace/dataset/ocr/rec/icdar2019_lsvt/valid.txt
+    - /workspace/src/dataset/ocr/rec/icdar2019_lsvt/valid.txt
     transforms:
     - DecodeImage:
         img_mode: BGR

@@ -3,7 +3,6 @@ from __future__ import division
 from __future__ import print_function
 
 import numpy as np
-
 import os
 import sys
 
@@ -16,21 +15,66 @@ os.environ["FLAGS_allocator_strategy"] = "auto_growth"
 import torch
 
 from core.data import create_operators, transform
-from core.modeling import build_model
+from core.modeling.architectures import build_model
 from core.postprocess import build_post_process
 from core.utils.save_load import load_model
 from core.utils.utility import get_image_file_list
 import tools.program as program
 
 
-def main():
+def main(config, device, logger, log_writer):
     global_config = config["Global"]
 
     # build post process
     post_process_class = build_post_process(config["PostProcess"], global_config)
 
     # build model
+    is_distill = False
+    if hasattr(post_process_class, "character"):
+        char_num = len(getattr(post_process_class, "character"))
+        if config["Architecture"]["algorithm"] in [
+            "Distillation",
+        ]:  # distillation model
+            is_distill = True
+            for key in config["Architecture"]["Models"]:
+                if (
+                    config["Architecture"]["Models"][key]["Head"]["name"] == "MultiHead"
+                ):  # for multi head
+                    out_channels_list = {}
+                    if config["PostProcess"]["name"] == "DistillationSARLabelDecode":
+                        char_num = char_num - 2
+                    out_channels_list["CTCLabelDecode"] = char_num
+                    out_channels_list["SARLabelDecode"] = char_num + 2
+                    config["Architecture"]["Models"][key]["Head"][
+                        "out_channels_list"
+                    ] = out_channels_list
+                else:
+                    config["Architecture"]["Models"][key]["Head"][
+                        "out_channels"
+                    ] = char_num
+        elif config["Architecture"]["Head"]["name"] == "MultiHead":  # for multi head
+            out_channels_list = {}
+            if config["PostProcess"]["name"] == "SARLabelDecode":
+                char_num = char_num - 2
+            out_channels_list["CTCLabelDecode"] = char_num
+            out_channels_list["SARLabelDecode"] = char_num + 2
+            config["Architecture"]["Head"]["out_channels_list"] = out_channels_list
+        else:  # base rec model
+            config["Architecture"]["Head"]["out_channels"] = char_num
     model = build_model(config["Architecture"])
+    model.to(device)
+
+    extra_input_models = ["SAR", "SVTR"]
+    extra_input = False
+    if config["Architecture"]["algorithm"] == "Distillation":
+        for key in config["Architecture"]["Models"]:
+            extra_input = (
+                extra_input
+                or config["Architecture"]["Models"][key]["algorithm"]
+                in extra_input_models
+            )
+    else:
+        extra_input = config["Architecture"]["algorithm"] in extra_input_models
 
     load_model(config, model)
 
@@ -54,10 +98,17 @@ def main():
             data = {"image": img}
         batch = transform(data, ops)
 
-        images = np.expand_dims(batch[0], axis=0)
-        images = torch.tensor(images)
-        preds = model(images)
+        batch = [torch.tensor(np.expand_dims(item, axis=0)).to(device) for item in batch]
+        images = batch[0]
+
+        if extra_input:
+            preds = model(images, data=batch[1:])
+        else:
+            preds = model(images)
+
         post_result = post_process_class(preds)
+        if is_distill:
+            post_result = post_result["Student"]
         for rec_result in post_result:
             logger.info("\t result: {}".format(rec_result))
     logger.info("success!")
@@ -65,4 +116,4 @@ def main():
 
 if __name__ == "__main__":
     config, device, logger, log_writer = program.preprocess()
-    main()
+    main(config, device, logger, log_writer)

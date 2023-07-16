@@ -1,6 +1,5 @@
 import os, sys
 import torch.nn as nn
-import ipdb
 
 from core.modeling.transforms import build_transform
 from core.modeling.backbones import build_backbone
