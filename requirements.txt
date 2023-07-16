@@ -1,3 +1,8 @@
 torch
+six
+opencv-python-headless
+pyyaml
+tqdm
+wandb
 torchvision
 Levenshtein

@@ -1,5 +1,6 @@
 import os, sys
 import torch.nn as nn
+import ipdb
 
 from core.modeling.transforms import build_transform
 from core.modeling.backbones import build_backbone
@@ -104,13 +105,14 @@ class BaseModel(nn.Module):
         if self.use_head:
             x = self.head(x, targets=data)
         # for multi head, save ctc neck out for udml
-        if isinstance(x, dict) and "ctc_neck" in x.keys():
-            y["neck_out"] = x["ctc_neck"]
-            y["head_out"] = x
-        elif isinstance(x, dict):
-            y.update(x)
-        else:
-            y["head_out"] = x
+            if isinstance(x, dict) and "ctc_neck" in x.keys():
+                y["neck_out"] = x["ctc_neck"]
+                y["head_out"] = x
+            elif isinstance(x, dict):
+                y.update(x)
+            else:
+                y["head_out"] = x
+            final_name = "head_out"
         if self.return_all_feats:
             if self.training:
                 return y

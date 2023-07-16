@@ -5,7 +5,6 @@ from __future__ import unicode_literals
 import copy
 import torch
 from torch import optim
-import ipdb
 
 
 __all__ = ["build_optimizer"]

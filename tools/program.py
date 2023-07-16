@@ -8,6 +8,7 @@ import platform
 import yaml
 import time
 import datetime
+import ipdb
 import torch
 import torch.distributed as dist
 from tqdm import tqdm
@@ -307,6 +308,7 @@ def train(
                     post_process_class,
                     eval_class,
                     device,
+                    extra_input=extra_input,
                 )
                 cur_metric_str = "cur metric, {}".format(
                     ", ".join(["{}: {}".format(k, v) for k, v in cur_metric.items()])
@@ -407,6 +409,7 @@ def eval(
     post_process_class,
     eval_class,
     device,
+    extra_input=False,
 ):
     model.eval()
     with torch.no_grad():
@@ -427,7 +430,10 @@ def eval(
             images = batch[0].to(device)
             start = time.time()
 
-            preds = model(images)
+            if extra_input:
+                preds = model(images, data=batch[1:])
+            else:
+                preds = model(images)
 
             batch_numpy = []
             for item in batch:

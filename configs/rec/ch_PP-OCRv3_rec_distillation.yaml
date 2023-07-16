@@ -1,17 +1,17 @@
 Global:
   debug: false
   use_gpu: false
-  epoch_num: 800
+  use_wandb: true
+  epoch_num: 1
   log_smooth_window: 20
-  print_batch_step: 10
+  print_batch_step: 20
   save_model_dir: ./output/rec_ppocr_v3_distillation
-  save_epoch_step: 3
+  save_epoch_step: 1
   eval_batch_step: [0, 2000]
-  cal_metric_during_train: true
+  cal_metric_during_train: false
   pretrained_model:
   checkpoints:
   save_inference_dir:
-  use_visualdl: false
   infer_img: doc/imgs_words/ch/word_1.jpg
   character_dict_path: core/utils/dict/ppocr_keys_v1.txt
   max_text_length: &max_text_length 25
@@ -147,10 +147,10 @@ Metric:
 Train:
   dataset:
     name: SimpleDataSet
-    data_dir: /root/workspace/dataset/ocr/rec/icdar2019_lsvt/train_images
+    data_dir: /workspace/src/dataset/ocr/rec/icdar2019_lsvt/train_images
     ext_op_transform_idx: 1
     label_file_list:
-    - /root/workspace/dataset/ocr/rec/icdar2019_lsvt/train.txt
+    - /workspace/src/dataset/ocr/rec/icdar2019_lsvt/train.txt
     transforms:
     - DecodeImage:
         img_mode: BGR
@@ -172,15 +172,15 @@ Train:
         - valid_ratio
   loader:
     shuffle: true
-    batch_size_per_card: 1
+    batch_size_per_card: 4
     drop_last: true
     num_workers: 1
 Eval:
   dataset:
     name: SimpleDataSet
-    data_dir: /root/workspace/dataset/ocr/rec/icdar2019_lsvt/train_images
+    data_dir: /workspace/src/dataset/ocr/rec/icdar2019_lsvt/train_images
     label_file_list:
-    - /root/workspace/dataset/ocr/rec/icdar2019_lsvt/valid.txt
+    - /workspace/src/dataset/ocr/rec/icdar2019_lsvt/valid.txt
     transforms:
     - DecodeImage:
         img_mode: BGR
@@ -198,5 +198,5 @@ Eval:
   loader:
     shuffle: false
     drop_last: false
-    batch_size_per_card: 1
+    batch_size_per_card: 4
     num_workers: 1
