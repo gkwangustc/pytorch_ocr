@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 
 from .operators import *
 from .label_ops import *
+from .rec_img_aug import RecResizeImg, RecConAug
 
 
 def transform(data, ops=None):

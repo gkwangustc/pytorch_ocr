@@ -23,8 +23,8 @@ def _mkdir_if_not_exist(path, logger):
         except OSError as e:
             if e.errno == errno.EEXIST and os.path.isdir(path):
                 logger.warning(
-                    "be happy if some process has already created {}".format(path)
-                )
+                    "be happy if some process has already created {}".format(
+                        path))
             else:
                 raise OSError("Failed to mkdir {}".format(path))
 
@@ -48,9 +48,8 @@ def load_model(config, model, optimizer=None):
 
     if model_name.endswith(".pth"):
         model_name = model_name.replace(".pth", "")
-    assert os.path.exists(model_name + ".pth"), "The {}.pth does not exists!".format(
-        model_name
-    )
+    assert os.path.exists(
+        model_name + ".pth"), "The {}.pth does not exists!".format(model_name)
 
     # load params from trained model
     params = torch.load(model_name + ".pth")
@@ -58,7 +57,9 @@ def load_model(config, model, optimizer=None):
 
     current_model_dict = model.state_dict()
     new_state_dict = {
-        k: v if v.size() == current_model_dict[k].size() else current_model_dict[k]
+        k:
+            v if v.size() == current_model_dict[k].size() else
+            current_model_dict[k]
         for k, v in zip(current_model_dict.keys(), save_model_dict.values())
     }
 
@@ -71,16 +72,42 @@ def load_model(config, model, optimizer=None):
     return best_model_dict
 
 
-def save_model(
-    model,
-    optimizer,
-    model_path,
-    logger,
-    config,
-    is_best=False,
-    prefix="pt_base",
-    **kwargs
-):
+def load_pretrained_params(model, path):
+    logger = get_logger()
+    if path.endswith('.pth'):
+        path = path.replace('.pth', '')
+    assert os.path.exists(path + ".pth"), \
+        "The {}.pth does not exists!".format(path)
+
+    params = torch.load(path + '.pth')
+    state_dict = model.state_dict()
+    new_state_dict = {}
+
+    for k1 in params.keys():
+        if k1 not in state_dict.keys():
+            logger.warning("The pretrained params {} not in model".format(k1))
+        else:
+            if params[k1].dtype != state_dict[k1].dtype:
+                params[k1] = params[k1].astype(state_dict[k1].dtype)
+            if list(state_dict[k1].shape) == list(params[k1].shape):
+                new_state_dict[k1] = params[k1]
+            else:
+                logger.warning(
+                    "The shape of model params {} {} not matched with loaded params {} {} !"
+                    .format(k1, state_dict[k1].shape, k1, params[k1].shape))
+
+    model.set_state_dict(new_state_dict)
+    logger.info("load pretrain successful from {}".format(path))
+
+
+def save_model(model,
+               optimizer,
+               model_path,
+               logger,
+               config,
+               is_best=False,
+               prefix="pt_base",
+               **kwargs):
     """
     save model to the target path
     """

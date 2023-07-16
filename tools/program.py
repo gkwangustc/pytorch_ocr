@@ -175,6 +175,22 @@ def train(
     train_stats = TrainingStats(log_smooth_window, ["lr"])
     model.train()
 
+    extra_input_models = ["SAR", "SVTR"]
+    extra_input = False
+    if config["Architecture"]["algorithm"] == "Distillation":
+        for key in config["Architecture"]["Models"]:
+            extra_input = (
+                extra_input
+                or config["Architecture"]["Models"][key]["algorithm"]
+                in extra_input_models
+            )
+    else:
+        extra_input = config["Architecture"]["algorithm"] in extra_input_models
+    try:
+        model_type = config["Architecture"]["model_type"]
+    except:
+        model_type = None
+
     start_epoch = (
         best_model_dict["start_epoch"] if "start_epoch" in best_model_dict else 1
     )
@@ -205,8 +221,12 @@ def train(
                 lr = lr_scheduler
 
             model.zero_grad()
-            images = batch[0].to(device)
-            preds = model(images)
+            batch = [item.to(device) for item in batch]
+            images = batch[0]
+            if extra_input:
+                preds = model(images, data=batch[1:])
+            else:
+                preds = model(images)
             loss = loss_class(preds, batch)
             avg_loss = loss["loss"]
             avg_loss.backward()
@@ -216,7 +236,12 @@ def train(
                 cal_metric_during_train and epoch % calc_epoch_interval == 0
             ):  # only rec and cls need
                 batch = [item.numpy() for item in batch]
-                post_result = post_process_class(preds, batch[1])
+                if config["Loss"]["name"] in ["MultiLoss"]:  # for multi head loss
+                    post_result = post_process_class(
+                        preds["ctc"], batch[1]
+                    )  # for CTC head out
+                else:
+                    post_result = post_process_class(preds, batch[1])
                 eval_class(post_result, batch)
                 metric = eval_class.get_metric()
                 train_stats.update(metric)
@@ -447,7 +472,7 @@ def preprocess(is_train=False):
         config["local_rank"] = 0
         config["Global"]["distributed"] = False
 
-    device = "cuda:{}".format(config['local_rank']) if use_gpu else "cpu"
+    device = "cuda:{}".format(config["local_rank"]) if use_gpu else "cpu"
     device = torch.device(device)
 
     if is_train:

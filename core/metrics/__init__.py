@@ -8,10 +8,12 @@ import copy
 __all__ = ["build_metric"]
 
 from .cls_metric import ClsMetric
+from .rec_metric import RecMetric
+from .distillation_metric import DistillationMetric
 
 
 def build_metric(config):
-    support_dict = ["ClsMetric"]
+    support_dict = ["ClsMetric", "RecMetric", "DistillationMetric"]
 
     config = copy.deepcopy(config)
     module_name = config.pop("name")

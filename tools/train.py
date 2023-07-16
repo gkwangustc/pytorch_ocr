@@ -13,7 +13,7 @@ import torch
 import torch.distributed as dist
 
 from core.data import build_dataloader
-from core.modeling import build_model
+from core.modeling.architectures import build_model
 from core.losses import build_loss
 from core.optimizer import build_optimizer
 from core.postprocess import build_post_process
@@ -46,6 +46,58 @@ def main(config, device, logger, log_writer):
 
     # build model
     # for rec algorithm
+    if hasattr(post_process_class, "character"):
+        char_num = len(getattr(post_process_class, "character"))
+        if config["Architecture"]["algorithm"] in [
+            "Distillation",
+        ]:  # distillation model
+            for key in config["Architecture"]["Models"]:
+                if (
+                    config["Architecture"]["Models"][key]["Head"]["name"] == "MultiHead"
+                ):  # for multi head
+                    if config["PostProcess"]["name"] == "DistillationSARLabelDecode":
+                        char_num = char_num - 2
+                    # update SARLoss params
+                    assert (
+                        list(config["Loss"]["loss_config_list"][-1].keys())[0]
+                        == "DistillationSARLoss"
+                    )
+                    config["Loss"]["loss_config_list"][-1]["DistillationSARLoss"][
+                        "ignore_index"
+                    ] = (char_num + 1)
+                    out_channels_list = {}
+                    out_channels_list["CTCLabelDecode"] = char_num
+                    out_channels_list["SARLabelDecode"] = char_num + 2
+                    config["Architecture"]["Models"][key]["Head"][
+                        "out_channels_list"
+                    ] = out_channels_list
+                else:
+                    config["Architecture"]["Models"][key]["Head"][
+                        "out_channels"
+                    ] = char_num
+        elif config["Architecture"]["Head"]["name"] == "MultiHead":  # for multi head
+            if config["PostProcess"]["name"] == "SARLabelDecode":
+                char_num = char_num - 2
+            # update SARLoss params
+            assert list(config["Loss"]["loss_config_list"][1].keys())[0] == "SARLoss"
+            if config["Loss"]["loss_config_list"][1]["SARLoss"] is None:
+                config["Loss"]["loss_config_list"][1]["SARLoss"] = {
+                    "ignore_index": char_num + 1
+                }
+            else:
+                config["Loss"]["loss_config_list"][1]["SARLoss"]["ignore_index"] = (
+                    char_num + 1
+                )
+            out_channels_list = {}
+            out_channels_list["CTCLabelDecode"] = char_num
+            out_channels_list["SARLabelDecode"] = char_num + 2
+            config["Architecture"]["Head"]["out_channels_list"] = out_channels_list
+        else:  # base rec model
+            config["Architecture"]["Head"]["out_channels"] = char_num
+
+        if config["PostProcess"]["name"] == "SARLabelDecode":  # for SAR model
+            config["Loss"]["ignore_index"] = char_num - 1
+
     model = build_model(config["Architecture"])
     model.to(device)
 
