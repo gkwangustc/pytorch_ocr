@@ -93,7 +93,7 @@ class SAREncoder(nn.Module):
             T = torch.tensor(holistic_feat.size(1))
             #T = holistic_feat.size(1)
             for i in range(valid_ratios.size(0)):
-                valid_step = torch.min(T, torch.ceil(T * valid_ratios[i]).int()) - 1
+                valid_step = torch.min(T, torch.ceil(T * valid_ratios[i]).long()) - 1
 
                 # valid_step = paddle.minimum(
                 #     T, paddle.ceil(valid_ratios[i] * T).astype('int32')) - 1
@@ -252,7 +252,7 @@ class ParallelSARDecoder(BaseDecoder):
             # cal mask of attention weight
             w = torch.tensor(w)
             for i in range(valid_ratios.size(0)):
-                valid_width = torch.min(w, torch.ceil(w * valid_ratios[i]).int())
+                valid_width = torch.min(w, torch.ceil(w * valid_ratios[i]).long())
                 # valid_width = paddle.minimum(
                 #     w, paddle.ceil(valid_ratios[i] * w).astype("int32"))
                 if valid_width < w:
