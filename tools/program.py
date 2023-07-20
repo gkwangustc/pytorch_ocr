@@ -235,7 +235,7 @@ def train(
             if (
                 cal_metric_during_train and epoch % calc_epoch_interval == 0
             ):  # only rec and cls need
-                batch = [item.numpy() for item in batch]
+                batch = [item.detach().cpu().numpy() for item in batch]
                 if config["Loss"]["name"] in ["MultiLoss"]:  # for multi head loss
                     post_result = post_process_class(
                         preds["ctc"], batch[1]

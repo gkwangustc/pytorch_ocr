@@ -23,10 +23,10 @@ class CTCLoss(nn.Module):
 
         predicts = predicts.permute(1, 0, 2).log_softmax(2)
         N, B, _ = predicts.shape
-        preds_lengths = torch.tensor([N] * B, dtype=torch.int32)
+        preds_lengths = torch.tensor([N] * B, dtype=torch.long)
 
-        labels = batch[1].type(torch.IntTensor).to(predicts.device)
-        label_lengths = batch[2].type(torch.IntTensor)
+        labels = batch[1].long().to(predicts.device)
+        label_lengths = batch[2].long()
 
         loss = self.loss_func(predicts, labels, preds_lengths, label_lengths)
         if self.use_focal_loss:
