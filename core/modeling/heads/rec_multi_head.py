@@ -17,56 +17,87 @@ from __future__ import division
 from __future__ import print_function
 
 import math
-import torch 
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from core.modeling.necks.rnn import Im2Seq, EncoderWithRNN, EncoderWithFC, SequenceEncoder, EncoderWithSVTR
-from .rec_ctc_head import CTCHead
+from core.modeling.necks.rnn import (
+    Im2Seq,
+    EncoderWithRNN,
+    EncoderWithFC,
+    SequenceEncoder,
+    EncoderWithSVTR,
+)
 from .rec_sar_head import SARHead
+from .rec_ctc_head import CTCHead
+from .rec_conv_ctc_head import ConvCTCHead
+
 
 
 class MultiHead(nn.Module):
     def __init__(self, in_channels, out_channels_list, **kwargs):
         super().__init__()
-        self.head_list = kwargs.pop('head_list')
-        self.gtc_head = 'sar'
+        self.head_list = kwargs.pop("head_list")
+        self.gtc_head = "sar"
         assert len(self.head_list) >= 2
         for idx, head_name in enumerate(self.head_list):
             name = list(head_name)[0]
-            if name == 'SARHead':
+            if name == "SARHead":
                 # sar head
                 sar_args = self.head_list[idx][name]
-                self.sar_head = eval(name)(in_channels=in_channels, \
-                    out_channels=out_channels_list['SARLabelDecode'], **sar_args)
-            elif name == 'CTCHead':
+                self.sar_head = eval(name)(
+                    in_channels=in_channels,
+                    out_channels=out_channels_list["SARLabelDecode"],
+                    **sar_args
+                )
+            elif "CTCHead" in name and "Neck" not in self.head_list[idx][name].keys():
+                # ctc head
+                head_args = self.head_list[idx][name]
+                self.ctc_head = eval(name)(
+                    in_channels=in_channels,
+                    out_channels=out_channels_list["CTCLabelDecode"],
+                )
+                self.ctc_head_name = "CTC"
+            elif "CTCHead" in name and "Neck" in self.head_list[idx][name].keys():
                 # ctc neck
                 self.encoder_reshape = Im2Seq(in_channels)
-                neck_args = self.head_list[idx][name]['Neck']
-                encoder_type = neck_args.pop('name')
+                neck_args = self.head_list[idx][name]["Neck"]
+                encoder_type = neck_args.pop("name")
                 self.encoder = encoder_type
-                self.ctc_encoder = SequenceEncoder(in_channels=in_channels, \
-                    encoder_type=encoder_type, **neck_args)
+                self.ctc_encoder = SequenceEncoder(
+                    in_channels=in_channels, encoder_type=encoder_type, **neck_args
+                )
                 # ctc head
-                head_args = self.head_list[idx][name]['Head']
-                self.ctc_head = eval(name)(in_channels=self.ctc_encoder.out_channels, \
-                    out_channels=out_channels_list['CTCLabelDecode'], **head_args)
+                head_args = self.head_list[idx][name]["Head"]
+                self.ctc_head = eval(name)(
+                    in_channels=self.ctc_encoder.out_channels,
+                    out_channels=out_channels_list["CTCLabelDecode"],
+                    **head_args
+                )
+                self.ctc_head_name = "CTCWithNeck"
             else:
                 raise NotImplementedError(
-                    '{} is not supported in MultiHead yet'.format(name))
+                    "{} is not supported in MultiHead yet".format(name)
+                )
 
     def forward(self, x, targets=None):
-        ctc_encoder = self.ctc_encoder(x)
-        ctc_out = self.ctc_head(ctc_encoder, targets)
-        head_out = dict()
-        head_out['ctc'] = ctc_out
-        head_out['ctc_neck'] = ctc_encoder
+        if self.ctc_head_name == "CTC":
+            ctc_out = self.ctc_head(x)
+            head_out = dict()
+            head_out["ctc"] = ctc_out
+        elif self.ctc_head_name == "CTCWithNeck":
+            ctc_encoder = self.ctc_encoder(x)
+            ctc_out = self.ctc_head(ctc_encoder, targets)
+            head_out = dict()
+            head_out["ctc"] = ctc_out
+            head_out["ctc_neck"] = ctc_encoder
+
         # eval mode
         if not self.training:
             return ctc_out
-        if self.gtc_head == 'sar':
+        if self.gtc_head == "sar":
             sar_out = self.sar_head(x, targets[1:])
-            head_out['sar'] = sar_out
+            head_out["sar"] = sar_out
             return head_out
         else:
             return head_out

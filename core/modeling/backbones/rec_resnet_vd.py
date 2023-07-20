@@ -224,7 +224,7 @@ class ResNet(nn.Module):
                     shortcut = True
                     # self.block_list.append(bottleneck_block)
                     self.block_list.add_module('bb_%d_%d' % (block, i), bottleneck_block)
-                self.out_channels = num_filters[block]
+                self.out_channels = num_filters[block] * 4
         else:
             for block in range(len(depth)):
                 shortcut = False

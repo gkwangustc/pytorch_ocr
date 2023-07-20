@@ -1,5 +1,5 @@
 # for single gpu and cpu
-python tools/train.py -c configs/rec/ch_PY-OCR_rec.yaml
+python tools/train.py -c configs/rec/ch_PY-OCR_rec_conv_ctc.yaml
 #python tools/train.py -c configs/rec/ch_PY-OCR_rec_distillation.yaml
 
 # for mutli gpu
