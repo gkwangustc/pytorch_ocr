@@ -12,22 +12,70 @@ __dir__ = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(__dir__)
 sys.path.append(os.path.abspath(os.path.join(__dir__, "..")))
 
-from core.modeling import build_model
+from core.modeling.architectures import build_model
+from core.postprocess import build_post_process
 from core.utils.save_load import load_model
 import tools.program as program
 
 
 def main(config, device, logger, log_writer):
+    global_config = config["Global"]
+    # build dataloader
+    post_process_class = build_post_process(config["PostProcess"], global_config)
+
     # build model
+    if hasattr(post_process_class, "character"):
+        char_num = len(getattr(post_process_class, "character"))
+        if config["Architecture"]["algorithm"] in [
+            "Distillation",
+        ]:  # distillation model
+            is_distill = True
+            for key in config["Architecture"]["Models"]:
+                if (
+                    config["Architecture"]["Models"][key]["Head"]["name"] == "MultiHead"
+                ):  # for multi head
+                    out_channels_list = {}
+                    if config["PostProcess"]["name"] == "DistillationSARLabelDecode":
+                        char_num = char_num - 2
+                    out_channels_list["CTCLabelDecode"] = char_num
+                    out_channels_list["SARLabelDecode"] = char_num + 2
+                    config["Architecture"]["Models"][key]["Head"][
+                        "out_channels_list"
+                    ] = out_channels_list
+                else:
+                    config["Architecture"]["Models"][key]["Head"][
+                        "out_channels"
+                    ] = char_num
+                config["Architecture"]["Models"][key]["return_all_feats"] = False
+        elif config["Architecture"]["Head"]["name"] == "MultiHead":  # for multi head
+            out_channels_list = {}
+            if config["PostProcess"]["name"] == "SARLabelDecode":
+                char_num = char_num - 2
+            out_channels_list["CTCLabelDecode"] = char_num
+            out_channels_list["SARLabelDecode"] = char_num + 2
+            config["Architecture"]["Head"]["out_channels_list"] = out_channels_list
+        else:  # base rec model
+            config["Architecture"]["Head"]["out_channels"] = char_num
+
     model = build_model(config["Architecture"])
     load_model(config, model)
+
+    arch_config = config["Architecture"]
+    if arch_config["algorithm"] in [
+        "Distillation",
+    ]:
+        for idx, name in enumerate(model.model_name_list):
+            if name != "Student":
+                continue
+            model = model.model_list[idx]
+
     model.eval()
     model.to(device)
 
     # export model
     save_path = "{}/inference.onnx".format(config["Global"]["save_model_dir"])
 
-    dummy_input = torch.randn(8, 3, 32, 32).to(device)
+    dummy_input = torch.randn(8, 3, 48, 320).to(device)
 
     # trt5
     # torch.onnx.export(model,
