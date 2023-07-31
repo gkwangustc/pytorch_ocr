@@ -44,7 +44,7 @@ Architecture:
       Transform:
       Backbone:
         name: ResNet
-        layers: 34
+        layer: 34
       Head:
         name: MultiHead
         head_list:

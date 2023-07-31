@@ -70,14 +70,13 @@ Train:
           ext_data_num: 2
           image_shape: [48, 320, 3]
           max_text_length: *max_text_length
-      - MultiLabelEncode:
+      - CTCLabelEncode:
       - RecResizeImg:
           image_shape: [3, 48, 320]
       - KeepKeys:
           keep_keys:
             - image
-            - label_ctc
-            - label_sar
+            - label
             - length
             - valid_ratio
   loader:
@@ -95,14 +94,13 @@ Eval:
       - DecodeImage:
           img_mode: BGR
           channel_first: false
-      - MultiLabelEncode:
+      - CTCLabelEncode:
       - RecResizeImg:
           image_shape: [3, 48, 320]
       - KeepKeys:
           keep_keys:
             - image
-            - label_ctc
-            - label_sar
+            - label
             - length
             - valid_ratio
   loader:
