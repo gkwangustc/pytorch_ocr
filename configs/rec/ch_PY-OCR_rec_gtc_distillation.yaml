@@ -1,12 +1,12 @@
 Global:
   debug: false
-  use_gpu: false
+  use_gpu: true
   use_wandb: false
-  epoch_num: 1
+  epoch_num: 100
   log_smooth_window: 20
   print_batch_step: 20
-  save_model_dir: ./output/rec_pyocr_distillation
-  save_epoch_step: 1
+  save_model_dir: ./output/rec_pyocr_gtc_distillation
+  save_epoch_step: 5
   eval_batch_step: [0, 2000]
   cal_metric_during_train: false
   pretrained_model:
@@ -18,21 +18,17 @@ Global:
   infer_mode: false
   use_space_char: true
   distributed: true
-  save_res_path: ./output/rec/predicts_pyocrv3_distillation.txt
-
+  save_res_path: ./output/rec/predicts_rec_pyocr_gtc_distillation.txt
 
 Optimizer:
   name: Adam
   beta1: 0.9
   beta2: 0.999
   lr:
-    name: Cosine
-    learning_rate: 0.001
-    warmup_epoch: 5
+    learning_rate: 0.0005
   regularizer:
     name: L2
-    factor: 3.0e-05
-
+    factor: 0
 
 Architecture:
   model_type: &model_type "rec"
@@ -47,9 +43,8 @@ Architecture:
       algorithm: SVTR
       Transform:
       Backbone:
-        name: MobileNetV3
-        scale: 0.5
-        model_name: small
+        name: ResNet
+        layers: 34
       Head:
         name: MultiHead
         head_list:
@@ -73,9 +68,8 @@ Architecture:
       algorithm: SVTR
       Transform:
       Backbone:
-        name: MobileNetV3
-        scale: 0.5
-        model_name: small
+        name: ResNet
+        layer: 34
       Head:
         name: MultiHead
         head_list:
@@ -94,42 +88,42 @@ Architecture:
 Loss:
   name: CombinedLoss
   loss_config_list:
-  - DistillationDMLLoss:
-      weight: 1.0
-      act: "softmax"
-      use_log: true
-      model_name_pairs:
-      - ["Student", "Teacher"]
-      key: head_out
-      multi_head: True
-      dis_head: ctc
-      name: dml_ctc
-  - DistillationDMLLoss:
-      weight: 0.5
-      act: "softmax"
-      use_log: true
-      model_name_pairs:
-      - ["Student", "Teacher"]
-      key: head_out
-      multi_head: True
-      dis_head: sar
-      name: dml_sar
-  - DistillationDistanceLoss:
-      weight: 1.0
-      mode: "l2"
-      model_name_pairs:
-      - ["Student", "Teacher"]
-      key: backbone_out
-  - DistillationCTCLoss:
-      weight: 1.0
-      model_name_list: ["Student", "Teacher"]
-      key: head_out
-      multi_head: True
-  - DistillationSARLoss:
-      weight: 1.0
-      model_name_list: ["Student", "Teacher"]
-      key: head_out
-      multi_head: True
+    - DistillationDMLLoss:
+        weight: 1.0
+        act: "softmax"
+        use_log: true
+        model_name_pairs:
+          - ["Student", "Teacher"]
+        key: head_out
+        multi_head: True
+        dis_head: ctc
+        name: dml_ctc
+    - DistillationDMLLoss:
+        weight: 0.5
+        act: "softmax"
+        use_log: true
+        model_name_pairs:
+          - ["Student", "Teacher"]
+        key: head_out
+        multi_head: True
+        dis_head: sar
+        name: dml_sar
+    - DistillationDistanceLoss:
+        weight: 1.0
+        mode: "l2"
+        model_name_pairs:
+          - ["Student", "Teacher"]
+        key: backbone_out
+    - DistillationCTCLoss:
+        weight: 1.0
+        model_name_list: ["Student", "Teacher"]
+        key: head_out
+        multi_head: True
+    - DistillationSARLoss:
+        weight: 1.0
+        model_name_list: ["Student", "Teacher"]
+        key: head_out
+        multi_head: True
 
 PostProcess:
   name: DistillationCTCLabelDecode
@@ -147,56 +141,56 @@ Metric:
 Train:
   dataset:
     name: SimpleDataSet
-    data_dir: /workspace/src/dataset/ocr/rec/icdar2019_lsvt/train_images
+    data_dir: dataset/rec/chinese/baidu/train_images
     ext_op_transform_idx: 1
     label_file_list:
-    - /workspace/src/dataset/ocr/rec/icdar2019_lsvt/train.txt
+      - dataset/rec/chinese/baidu/train.txt
     transforms:
-    - DecodeImage:
-        img_mode: BGR
-        channel_first: false
-    - RecConAug:
-        prob: 0.5
-        ext_data_num: 2
-        image_shape: [48, 320, 3]
-        max_text_length: *max_text_length
-    - MultiLabelEncode:
-    - RecResizeImg:
-        image_shape: [3, 48, 320]
-    - KeepKeys:
-        keep_keys:
-        - image
-        - label_ctc
-        - label_sar
-        - length
-        - valid_ratio
+      - DecodeImage:
+          img_mode: BGR
+          channel_first: false
+      - RecConAug:
+          prob: 0.5
+          ext_data_num: 2
+          image_shape: [48, 320, 3]
+          max_text_length: *max_text_length
+      - MultiLabelEncode:
+      - RecResizeImg:
+          image_shape: [3, 48, 320]
+      - KeepKeys:
+          keep_keys:
+            - image
+            - label_ctc
+            - label_sar
+            - length
+            - valid_ratio
   loader:
     shuffle: true
-    batch_size_per_card: 4
+    batch_size_per_card: 16
     drop_last: true
-    num_workers: 1
+    num_workers: 4
 Eval:
   dataset:
     name: SimpleDataSet
-    data_dir: /workspace/src/dataset/ocr/rec/icdar2019_lsvt/train_images
+    data_dir: dataset/rec/chinese/baidu/train_images
     label_file_list:
-    - /workspace/src/dataset/ocr/rec/icdar2019_lsvt/valid.txt
+      - dataset/rec/chinese/baidu/valid.txt
     transforms:
-    - DecodeImage:
-        img_mode: BGR
-        channel_first: false
-    - MultiLabelEncode:
-    - RecResizeImg:
-        image_shape: [3, 48, 320]
-    - KeepKeys:
-        keep_keys:
-        - image
-        - label_ctc
-        - label_sar
-        - length
-        - valid_ratio
+      - DecodeImage:
+          img_mode: BGR
+          channel_first: false
+      - MultiLabelEncode:
+      - RecResizeImg:
+          image_shape: [3, 48, 320]
+      - KeepKeys:
+          keep_keys:
+            - image
+            - label_ctc
+            - label_sar
+            - length
+            - valid_ratio
   loader:
     shuffle: false
     drop_last: false
-    batch_size_per_card: 4
-    num_workers: 1
+    batch_size_per_card: 16
+    num_workers: 4

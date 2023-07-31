@@ -437,7 +437,7 @@ def eval(
             batch_numpy = []
             for item in batch:
                 if isinstance(item, torch.Tensor):
-                    batch_numpy.append(item.numpy())
+                    batch_numpy.append(item.cpu().detach().numpy())
                 else:
                     batch_numpy.append(item)
             # Obtain usable results from post-processing methods

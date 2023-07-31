@@ -45,7 +45,7 @@ class ConvCTCHead(nn.Module):
             result = predicts
 
         if not self.training:
-            predicts = F.softmax(predicts, dim=2)
+            predicts = F.softmax(predicts, dim=3)
             result = predicts
 
         return result

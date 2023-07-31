@@ -4,8 +4,8 @@ Global:
   use_wandb: false
   epoch_num: 100
   log_smooth_window: 20
-  print_batch_step: 10
-  save_model_dir: ./output/rec_pyocr_conv_ctc
+  print_batch_step: 20
+  save_model_dir: ./output/rec_pyocr_gtc
   save_epoch_step: 5
   eval_batch_step: [0, 2000]
   cal_metric_during_train: true
@@ -18,7 +18,7 @@ Global:
   infer_mode: false
   use_space_char: true
   distributed: true
-  save_res_path: ./output/rec/predicts_pyocr_conv_ctc.txt
+  save_res_path: ./output/rec/predicts_rec_pyocr_gtc.txt
 
 Optimizer:
   name: Adam
@@ -32,17 +32,32 @@ Optimizer:
 
 Architecture:
   model_type: rec
-  algorithm: SAR
+  algorithm: SVTR
   Transform:
   Backbone:
     name: ResNet
-    layer: 34
+    scale: 34
   Head:
-    name: ConvCTCHead
-    fc_decay: 0.00001
+    name: MultiHead
+    head_list:
+      - CTCHead:
+          Neck:
+            name: svtr
+            dims: 64
+            depth: 2
+            hidden_dims: 120
+            use_guide: True
+          Head:
+            fc_decay: 0.00001
+      - SARHead:
+          enc_dim: 512
+          max_text_length: *max_text_length
 
 Loss:
-  name: CTCLoss
+  name: MultiLoss
+  loss_config_list:
+    - CTCLoss:
+    - SARLoss:
 
 PostProcess:
   name: CTCLabelDecode
@@ -50,6 +65,7 @@ PostProcess:
 Metric:
   name: RecMetric
   main_indicator: acc
+  ignore_space: False
 
 Train:
   dataset:
