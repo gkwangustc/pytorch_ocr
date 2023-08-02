@@ -1,3 +1,17 @@
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 This code is refer from:
 https://github.com/open-mmlab/mmocr/blob/main/mmocr/models/textrecog/encoders/sar_encoder.py
@@ -14,10 +28,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 import numpy as np
-# import paddle
-# from paddle import ParamAttr
-# import paddle.nn as nn
-# import paddle.nn.functional as F
 
 
 class SAREncoder(nn.Module):
@@ -91,12 +101,8 @@ class SAREncoder(nn.Module):
         if valid_ratios is not None:
             valid_hf = []
             T = torch.tensor(holistic_feat.size(1))
-            #T = holistic_feat.size(1)
             for i in range(valid_ratios.size(0)):
                 valid_step = torch.min(T, torch.ceil(T * valid_ratios[i]).long()) - 1
-
-                # valid_step = paddle.minimum(
-                #     T, paddle.ceil(valid_ratios[i] * T).astype('int32')) - 1
                 valid_hf.append(holistic_feat[i, valid_step, :])
             valid_hf = torch.stack(valid_hf, dim=0)
         else:
@@ -228,9 +234,7 @@ class ParallelSARDecoder(BaseDecoder):
 
         attn_query = self.conv1x1_1(y)  # bsz * (seq_len + 1) * attn_size
         bsz, seq_len, attn_size = attn_query.shape
-        # attn_query = paddle.unsqueeze(attn_query, axis=[3, 4])
         attn_query = attn_query.view(bsz, seq_len, attn_size, 1, 1)
-        # attn_query = attn_query.unsqueeze(3).unsqueeze(4)
         # (bsz, seq_len + 1, attn_size, 1, 1)
 
         attn_key = self.conv3x3_1(feat)
@@ -253,12 +257,9 @@ class ParallelSARDecoder(BaseDecoder):
             w = torch.tensor(w)
             for i in range(valid_ratios.size(0)):
                 valid_width = torch.min(w, torch.ceil(w * valid_ratios[i]).long())
-                # valid_width = paddle.minimum(
-                #     w, paddle.ceil(valid_ratios[i] * w).astype("int32"))
                 if valid_width < w:
                     attn_weight[i, :, :, valid_width:, :] = float('-inf')
 
-        # attn_weight = paddle.reshape(attn_weight, [bsz, T, -1])
         attn_weight = attn_weight.view(bsz, T, -1)
         attn_weight = F.softmax(attn_weight, dim=-1)
 

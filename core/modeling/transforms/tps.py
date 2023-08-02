@@ -1,3 +1,17 @@
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -8,9 +22,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from core.modeling.common import Activation
-# import paddle
-# from paddle import nn, ParamAttr
-# from paddle.nn import functional as F
 import numpy as np
 
 
@@ -163,11 +174,11 @@ class GridGenerator(nn.Module):
         Return:
             batch_P_prime: the grid for the grid_sampler
         """
-        C = self.build_C_paddle()
-        P = self.build_P_paddle(I_r_size)
+        C = self.build_C_torch()
+        P = self.build_P_torch(I_r_size)
 
-        inv_delta_C_tensor = self.build_inv_delta_C_paddle(C).type(torch.float32)
-        P_hat_tensor = self.build_P_hat_paddle(
+        inv_delta_C_tensor = self.build_inv_delta_C_torch(C).type(torch.float32)
+        P_hat_tensor = self.build_P_hat_torch(
             C, torch.as_tensor(P)).type(torch.float32)
 
         inv_delta_C_tensor.stop_gradient = True
@@ -185,7 +196,7 @@ class GridGenerator(nn.Module):
         batch_P_prime = torch.matmul(P_hat_tensor, batch_T)
         return batch_P_prime
 
-    def build_C_paddle(self):
+    def build_C_torch(self):
         """ Return coordinates of fiducial points in I_r; C """
         F = self.F
         ctrl_pts_x = torch.linspace(-1.0, 1.0, int(F / 2), dtype=torch.float64)
@@ -196,7 +207,7 @@ class GridGenerator(nn.Module):
         C = torch.cat([ctrl_pts_top, ctrl_pts_bottom], dim=0)
         return C  # F x 2
 
-    def build_P_paddle(self, I_r_size):
+    def build_P_torch(self, I_r_size):
         I_r_height, I_r_width = I_r_size
         I_r_grid_x = (torch.arange(
             -I_r_width, I_r_width, 2, dtype=torch.float64) + 1.0
@@ -208,12 +219,11 @@ class GridGenerator(nn.Module):
 
         # P: self.I_r_width x self.I_r_height x 2
         P = torch.stack(torch.meshgrid([I_r_grid_x, I_r_grid_y]), dim=2)
-        # P = paddle.transpose(P, perm=[1, 0, 2])
         P = P.permute(1, 0, 2)
         # n (= self.I_r_width x self.I_r_height) x 2
         return P.reshape([-1, 2])
 
-    def build_inv_delta_C_paddle(self, C):
+    def build_inv_delta_C_torch(self, C):
         """ Return inv_delta_C which is needed to calculate T """
         F = self.F
         hat_C = torch.zeros((F, F), dtype=torch.float64)  # F x F
@@ -249,12 +259,10 @@ class GridGenerator(nn.Module):
         inv_delta_C = torch.inverse(delta_C)
         return inv_delta_C  # F+3 x F+3
 
-    def build_P_hat_paddle(self, C, P):
+    def build_P_hat_torch(self, C, P):
         F = self.F
         eps = self.eps
         n = P.shape[0]  # n (= self.I_r_width x self.I_r_height)
-        # P_tile: n x 2 -> n x 1 x 2 -> n x F x 2
-        # P_tile = paddle.tile(paddle.unsqueeze(P, axis=1), (1, F, 1))
         P_tile = torch.unsqueeze(P, dim=1).repeat(1, F, 1)
         C_tile = torch.unsqueeze(C, dim=0)  # 1 x F x 2
         P_diff = P_tile - C_tile  # n x F x 2
@@ -262,8 +270,6 @@ class GridGenerator(nn.Module):
         rbf_norm = torch.norm(P_diff, p=2, dim=2, keepdim=False)
 
         # rbf: n x F
-        # rbf = torch.mul(
-        #     torch.square(rbf_norm), torch.log(rbf_norm + eps))
         rbf = torch.mul(
             rbf_norm**2, torch.log(rbf_norm + eps))
         P_hat = torch.cat(

@@ -1,3 +1,17 @@
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import torch
 import torch.nn as nn
 from core.modeling.common import Activation
@@ -150,12 +164,11 @@ class Attention(nn.Module):
             for h in range(0, H):
                 for w in range(0, W):
                     mask[h * W + w, h:h + hk, w:w + wk] = 0.
-            mask_paddle = mask[:, hk // 2:H + hk // 2, wk // 2:W + wk //
+            mask_torch = mask[:, hk // 2:H + hk // 2, wk // 2:W + wk //
                                2].flatten(1)
             mask_inf = torch.full([H * W, H * W], fill_value=float("-Inf"), dtype=torch.float32)
-            mask = torch.where(mask_paddle < 1, mask_paddle, mask_inf)
+            mask = torch.where(mask_torch < 1, mask_torch, mask_inf)
             self.mask = mask.unsqueeze(0).unsqueeze(1)
-            # self.mask = mask[None, None, :]
         self.mixer = mixer
 
     def forward(self, x):
