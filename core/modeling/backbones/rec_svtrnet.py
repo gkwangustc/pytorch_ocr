@@ -112,7 +112,7 @@ class ConvMixer(nn.Module):
     def forward(self, x):
         h = self.HW[0]
         w = self.HW[1]
-        x = x.transpose([0, 2, 1]).reshape([0, self.dim, h, w])
+        x = x.transpose([0, 2, 1]).contiguous().reshape([0, self.dim, h, w])
         x = self.local_mixer(x)
         x = x.flatten(2).permute(0, 2, 1)
         return x

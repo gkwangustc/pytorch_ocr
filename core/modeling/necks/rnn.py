@@ -153,7 +153,7 @@ class EncoderWithSVTR(nn.Module):
 
         z = self.norm(z)
         # last stage
-        z = z.reshape([-1, H, W, C]).permute(0, 3, 1, 2)
+        z = z.reshape([-1, H, W, C]).permute(0, 3, 1, 2).contiguous()
         z = self.conv3(z)
         z = torch.cat((h, z), dim=1)
         z = self.conv1x1(self.conv4(z))

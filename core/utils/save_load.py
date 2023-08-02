@@ -106,7 +106,7 @@ def save_model(model,
                logger,
                config,
                is_best=False,
-               prefix="pt_base",
+               prefix="pt_ocr",
                **kwargs):
     """
     save model to the target path

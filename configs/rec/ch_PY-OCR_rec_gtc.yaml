@@ -95,7 +95,7 @@ Train:
             - valid_ratio
   loader:
     shuffle: true
-    batch_size_per_card: 32
+    batch_size_per_card: 16
     drop_last: true
     num_workers: 4
 Eval:
@@ -121,5 +121,5 @@ Eval:
   loader:
     shuffle: false
     drop_last: false
-    batch_size_per_card: 32
+    batch_size_per_card: 16
     num_workers: 4

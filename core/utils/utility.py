@@ -72,7 +72,7 @@ def check_and_read(img_path):
         gif = cv2.VideoCapture(img_path)
         ret, frame = gif.read()
         if not ret:
-            logger = logging.getLogger("pt_base")
+            logger = logging.getLogger("pt_ocr")
             logger.info("Cannot read {}. This gif image maybe corrupted.")
             return None, False
         if len(frame.shape) == 2 or frame.shape[-1] == 1:

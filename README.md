@@ -2,7 +2,7 @@
 
 ## 背景
 
-使用pytorch_base框架，在OCR识别任务上来实现不同的OCR识别算法，OCR算法参考自PaddleOCR算法库。
+使用pytorch_base框架，在OCR识别任务上来实现不同的OCR识别算法，OCR整体框架及训练部分代码参考自[PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)项目，部分算法组件参考自[PaddleOCR2Pytorch](https://github.com/frotms/PaddleOCR2Pytorch)项目。
 
 ## 安装
 
@@ -71,7 +71,7 @@ python tools/train.py -c configs/rec/ch_PY-OCR_rec_ctc.yaml
 - 多卡训练
 
 ```shell
-CUDA_VISIBLE_DEVICES=0,1 python -m torch.distributed.launch --nproc_per_node=2 --master_port 61232 tools/train.py -c configs/rec/ch_PY-OCR_rec_ctc.yaml
+CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node=2 --master_port 61232 tools/train.py -c configs/rec/ch_PY-OCR_rec_ctc.yaml
 ```
 
 ### 评测
@@ -93,8 +93,13 @@ python tools/export_onnx.py -c configs/rec/ch_PY-OCR_rec_ctc.yaml -o Global.pret
 ## 性能
 
 使用上述四个配置，分别进行训练和评测，得到的参考指标如下所示
+| 指标 | ch_PY-OCR_rec_conv_ctc | ch_PY-OCR_rec_ctc | ch_PY-OCR_rec_gtc | ch_PY-OCR_rec_gtc_distillation |
+| --- | --- | --- | --- | --- |
+| Acc | 0.5546 | 0.5053 | | |
+| NED | 0.7842 | 0.7525 | | |
 
 ## 参考项目
 
 - [PaddlerOCR](https://github.com/PaddlePaddle/PaddleOCR)
+- [PaddleOCR2Pytorch](https://github.com/frotms/PaddleOCR2Pytorch)
 - [pytorch_base](https://github.com/gkwangustc/pytorch_base)
