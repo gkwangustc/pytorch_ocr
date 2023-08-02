@@ -93,10 +93,13 @@ python tools/export_onnx.py -c configs/rec/ch_PY-OCR_rec_ctc.yaml -o Global.pret
 ## 性能
 
 使用上述四个配置，分别进行训练和评测，得到的参考指标如下所示
-| 指标 | ch_PY-OCR_rec_conv_ctc | ch_PY-OCR_rec_ctc | ch_PY-OCR_rec_gtc | ch_PY-OCR_rec_gtc_distillation |
-| --- | --- | --- | --- | --- |
-| Acc | 0.5546 | 0.5053 | | |
-| NED | 0.7842 | 0.7525 | | |
+
+| 算法 | Acc | NED |
+| :---: | :---: | :---: |
+| ch_PY-OCR_rec_conv_ctc | 0.5546 | 0.7842 |
+| ch_PY-OCR_rec_ctc | 0.5053 | 0.7525 |
+| ch_PY-OCR_rec_gtc | | |
+| ch_PY-OCR_rec_gtc_distillation | | |
 
 ## 参考项目
 
