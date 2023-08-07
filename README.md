@@ -98,8 +98,8 @@ python tools/export_onnx.py -c configs/rec/ch_PY-OCR_rec_ctc.yaml -o Global.pret
 | :---: | :---: | :---: |
 | ch_PY-OCR_rec_conv_ctc | 0.5546 | 0.7842 |
 | ch_PY-OCR_rec_ctc | 0.5053 | 0.7525 |
-| ch_PY-OCR_rec_gtc | | |
-| ch_PY-OCR_rec_gtc_distillation | | |
+| ch_PY-OCR_rec_gtc | 0.5621 | 0.7834 |
+| ch_PY-OCR_rec_gtc_distillation | 0.5931 | 0.8013 |
 
 ## 参考项目
 
